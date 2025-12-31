@@ -1,0 +1,124 @@
+import React, { useEffect, useState } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  CardMedia,
+} from '@mui/material';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import type { Product } from '../api/productApi';
+import { getProducts } from '../api/productApi';
+// import { useCart } from '../context/CartContext'; // descomente se quiser usar addToCart
+
+export default function Home() {
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  // const { addToCart } = useCart(); // se tiver o context do carrinho
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadProducts() {
+    setLoading(true);
+    setError(null);
+    try {
+      const resp = await getProducts();
+      // aceita resp sendo array ou { data: [...] }
+      const raw = (resp && (resp as any).data) ? (resp as any).data : resp;
+      const list: Product[] = Array.isArray(raw) ? raw : [];
+      setProducts(list);
+    } catch (err) {
+      console.error('Erro ao carregar produtos', err);
+      setError('Erro ao carregar produtos. Veja console.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>Loja</Typography>
+
+      {user ? (
+        <Typography sx={{ mb: 2 }}>Bem-vindo, {user.email}</Typography>
+      ) : (
+        <Button onClick={() => navigate('/signin')} sx={{ mb: 2 }}>
+          Sign in
+        </Button>
+      )}
+
+      {isAdmin && (
+        <Button
+          sx={{ ml: 2, mb: 2 }}
+          variant="outlined"
+          onClick={() => navigate('/admin/products')}
+        >
+          Ir para Admin
+        </Button>
+      )}
+
+      {loading && <Typography>Carregando produtos...</Typography>}
+      {error && <Typography color="error">{error}</Typography>}
+
+      {!loading && products.length === 0 && !error && (
+        <Typography>Nenhum produto encontrado.</Typography>
+      )}
+
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        {products.map((p) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={p.id} sx={{width:200}}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              {/* se tiver imagem real, substitua CardMedia */}
+              <CardMedia
+                component="div"
+                sx={{
+                  height: 140,
+                  backgroundColor: 'grey.100',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'text.secondary',
+                }}
+              >
+                <Typography variant="caption">Imagem</Typography>
+              </CardMedia>
+
+              <CardContent sx={{ flex: 1 }}>
+                <Typography variant="h6" noWrap>{p.name}</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {p.description}
+                </Typography>
+                <Typography variant="subtitle1">
+                  R$ {typeof p.price === 'number' ? p.price.toFixed(2) : Number(p.price || 0).toFixed(2)}
+                </Typography>
+              </CardContent>
+
+              <CardActions>
+                <Button size="small" onClick={() => navigate(`/product/${p.id}`)}>View</Button>
+
+                {/* exemplo integração cart:
+                <Button size="small" onClick={() => addToCart(p.id)}>Add to cart</Button>
+                */}
+
+                {isAdmin && (
+                  <Button size="small" onClick={() => navigate(`/admin/products/${p.id}/edit`)}>
+                    Editar
+                  </Button>
+                )}
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+}
