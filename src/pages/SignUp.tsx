@@ -17,7 +17,7 @@ export default function SignUp() {
     setError(null);
     setLoading(true);
     try {
-      await signUp({ name, email, password });
+      await signUp({ name, email, password, role: "ROLE_USER" });
       // após cadastro, redireciona para login
       navigate("/signin");
     } catch (err: any) {

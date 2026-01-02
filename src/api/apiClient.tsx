@@ -3,11 +3,11 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:8080",
-  withCredentials: false, // normalmente false com basic auth
+  withCredentials: false,
 });
 
-// seta basic auth globalmente (e grava no localStorage)
-export function setBasicAuth(email?: string, password?: string | null) {
+// set/remove basic auth globalmente (email+password) and persist base64 token
+export function setBasicAuth(email?: string | null, password?: string | null) {
   if (!email || !password) {
     delete api.defaults.headers.common["Authorization"];
     localStorage.removeItem("authBasic");
@@ -18,12 +18,17 @@ export function setBasicAuth(email?: string, password?: string | null) {
   localStorage.setItem("authBasic", token);
 }
 
-// restore auth from localStorage quando a app iniciar
+// Restore header from the stored token (called automatically on module init)
 export function restoreAuthFromStorage() {
   const token = localStorage.getItem("authBasic");
   if (token) {
     api.defaults.headers.common["Authorization"] = `Basic ${token}`;
+  } else {
+    delete api.defaults.headers.common["Authorization"];
   }
 }
+
+// guarantee restore runs when module loads
+restoreAuthFromStorage();
 
 export default api;

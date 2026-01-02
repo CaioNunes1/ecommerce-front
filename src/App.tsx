@@ -1,6 +1,6 @@
-// src/App.tsx (exemplo mínimo)
+// src/App.tsx
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -14,10 +14,10 @@ import AdminProducts from './pages/AdminProducts';
 import AdminOrders from './pages/AdminOrders';
 import { AuthProvider } from "./context/AuthContext";
 import AdminUsers from "./pages/AdminUsers";
+import RequireAuth from "./components/RequireAuth";
+import RequireAdmin from "./components/RequireAdmin";
 
 function App() {
-  const user = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -25,18 +25,26 @@ function App() {
         <Routes>
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          {/* rota raiz: se não autenticado, redireciona para signin */}
-          <Route path="/" element={user ? <Home /> : <Navigate to="/signin" replace />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/my-orders" element={<MyOrders />} />
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="users" element={<AdminUsers />} />
+
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <Home />
+              </RequireAuth>
+            }
+          />
+
+          <Route path="/product/:id" element={<RequireAuth><ProductDetail/></RequireAuth>} />
+          <Route path="/cart" element={<RequireAuth><Cart/></RequireAuth>} />
+          <Route path="/checkout" element={<RequireAuth><Checkout/></RequireAuth>} />
+          <Route path="/my-orders" element={<RequireAuth><MyOrders/></RequireAuth>} />
+
+          <Route path="/admin" element={<RequireAdmin><AdminLayout/></RequireAdmin>}>
+            <Route path="products" element={<RequireAdmin><AdminProducts/></RequireAdmin>} />
+            <Route path="orders" element={<RequireAdmin><AdminOrders/></RequireAdmin>} />
+            <Route path="users" element={<RequireAdmin><AdminUsers/></RequireAdmin>} />
           </Route>
-          {/* outras rotas */}
         </Routes>
       </BrowserRouter>
     </AuthProvider>

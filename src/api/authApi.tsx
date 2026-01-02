@@ -2,7 +2,7 @@
 import api  from "./api";
 
 export type LoginPayload = { email: string; password: string };
-export type SignUpPayload = { name: string; email: string; password: string };
+export type SignUpPayload = { name: string; email: string; password: string,role:string};
 
 export async function signIn(payload: LoginPayload) {
   const res = await api.post("/auth/login", payload);

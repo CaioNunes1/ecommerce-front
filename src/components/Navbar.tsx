@@ -21,7 +21,7 @@ export default function Navbar() {
     <AppBar position="sticky">
       <Toolbar>
         <Box sx={{ flexGrow: 1, cursor: "pointer" }} onClick={() => navigate("/")}>
-          <Typography variant="h6">MeuCommerce</Typography>
+          <Typography variant="h6">MeuECommerce</Typography>
         </Box>
 
         <IconButton color="inherit" onClick={() => navigate("/cart")}>
