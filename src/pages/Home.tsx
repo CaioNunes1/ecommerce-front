@@ -49,7 +49,7 @@ export default function Home() {
       <Typography variant="h4" gutterBottom>Loja</Typography>
 
       {user ? (
-        <Typography sx={{ mb: 2 }}>Bem-vindo, {user.email}</Typography>
+        <Typography sx={{ mb: 2 }}>Bem-vindo, {user.name}</Typography>
       ) : (
         <Button onClick={() => navigate('/signin')} sx={{ mb: 2 }}>
           Sign in
