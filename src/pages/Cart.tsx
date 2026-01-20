@@ -11,16 +11,30 @@ import Typography from "@mui/material/Typography";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 import { useCart } from "../context/CartContext";
-import { getProductById, type Product } from "../api/productApi";
+import { getProductById } from "../api/productApi";
 import { useNavigate } from "react-router-dom";
+import { resolveImageUrl } from "../api/adminApi";
+import { CardMedia } from "@mui/material";
 
 type CartLine = { product: Product; quantity: number };
+
+type Product = {
+  id: number;
+  name: string;
+  sku?: string;
+  price?: number;
+  description?: string;
+  imageUrl?: string | null;
+  imagePath?: string | null;
+  _resolvedImage?: string | null; // campo local para URL absoluta
+};
 
 export default function Cart() {
   const { items, removeFromCart, setQuantity } = useCart();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [resolvedImage, setResolvedImage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,7 +50,14 @@ export default function Cart() {
         const promises = items.map((i) => getProductById(i.productId));
         const results = await Promise.all(promises);
         if (!mounted) return;
-        setProducts(results);
+
+        const normalized = results.map(p => {
+                const rawPath = p.imageUrl ?? p.imagePath ?? null;
+                const resolved = rawPath ? resolveImageUrl(rawPath) : null;
+                return { ...p, _resolvedImage: resolved };
+              });
+        setProducts(normalized);
+        console.log("Produtos do carrinho carregados:", normalized);
       } catch (err) {
         console.error("Erro ao carregar produtos do carrinho", err);
         if (mounted) setError("Erro ao carregar produtos");
@@ -74,12 +95,21 @@ export default function Cart() {
         {lines.map(({ product, quantity }) => (
           <Card key={product.id}>
             <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-              <Box sx={{
-                width: 120, height: 80, bgcolor: "grey.100", display: "flex",
-                alignItems: "center", justifyContent: "center", borderRadius: 1
-              }}>
-                <Typography variant="caption">Imagem</Typography>
-              </Box>
+              {product._resolvedImage ? (
+                <CardMedia
+                  component="img"
+                  image={product._resolvedImage}
+                  alt={product.name}
+                  sx={{ height: 80, width:120, objectFit: 'cover' }}
+                />
+              ) : (
+                <Box sx={{
+                  width: 120, height: 80, bgcolor: "grey.100", display: "flex",
+                  alignItems: "center", justifyContent: "center", borderRadius: 1
+                }}>
+                  <Typography variant="caption">Imagem</Typography>
+                </Box>
+              )}
 
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" noWrap>{product.name}</Typography>

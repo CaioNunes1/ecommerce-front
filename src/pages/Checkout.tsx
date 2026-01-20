@@ -9,14 +9,16 @@ import {
   Button,
   Card,
   CardContent,
+  CardMedia,
   CircularProgress,
   Grid,
   Snackbar,
   Typography,
   Alert,
 } from "@mui/material";
+import { resolveImageUrl } from '../api/adminApi'; // <--- usar função que resolve URL em seu projeto
 
-type Line = { product: Product; quantity: number };
+type Line = { product: Product & { _resolvedImage?: string | null }; quantity: number };
 
 export default function Checkout() {
   const { items, clearCart } = useCart();
@@ -43,9 +45,27 @@ export default function Checkout() {
           .filter((s) => s.status === "fulfilled")
           .map((s) => (s as PromiseFulfilledResult<Product>).value);
 
-        const newLines = products.map((p) => {
+        // mapeia products para linhas e resolve a URL da imagem (apenas aqui)
+        const newLines: Line[] = products.map((p) => {
           const qty = items.find((i) => i.productId === p.id)?.quantity ?? 1;
-          return { product: p, quantity: qty };
+
+          // obtém o campo imageUrl ou imagePath (conforme seu backend)
+          const raw = (p as any).imageUrl ?? (p as any).imagePath ?? null;
+
+          // use resolveImageUrl se existir; se não existir, tenta fallback simples
+          let resolved: string | null = null;
+          try {
+            if (raw) resolved = resolveImageUrl(raw);
+          } catch (e) {
+            // fallback: se raw começar com / ou http use como está; senão prefixe com base
+            if (typeof raw === 'string') {
+              if (raw.startsWith('http')) resolved = raw;
+              else if (raw.startsWith('/')) resolved = `${window.location.origin}${raw}`;
+              else resolved = `${window.location.origin}/images/${raw}`;
+            } else resolved = null;
+          }
+
+          return { product: { ...p, _resolvedImage: resolved }, quantity: qty };
         });
 
         if (!mounted) return;
@@ -108,10 +128,21 @@ export default function Checkout() {
           <Grid item xs={12} key={product.id}>
             <Card>
               <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                <Box sx={{ width: 100, height: 70, bgcolor: "grey.100", display: "flex",
-                           alignItems: "center", justifyContent: "center", borderRadius: 1 }}>
-                  <Typography variant="caption">Imagem</Typography>
-                </Box>
+                {/* Aqui mostramos a imagem resolvida sem afetar outras páginas */}
+                {product._resolvedImage ? (
+                  <CardMedia
+                    component="img"
+                    image={product._resolvedImage}
+                    alt={product.name}
+                    sx={{ width: 100, height: 70, objectFit: "cover", borderRadius: 1 }}
+                  />
+                ) : (
+                  <Box sx={{ width: 100, height: 70, bgcolor: "grey.100", display: "flex",
+                             alignItems: "center", justifyContent: "center", borderRadius: 1 }}>
+                    <Typography variant="caption">Imagem</Typography>
+                  </Box>
+                )}
+
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="h6">{product.name}</Typography>
                   <Typography variant="body2" color="text.secondary">{product.description}</Typography>

@@ -5,6 +5,8 @@ export type Product = {
   name: string;
   description: string;
   price: number;
+  imageUrl?: string ;
+  imagePath?: string;
 };
 
 export async function getProducts() {

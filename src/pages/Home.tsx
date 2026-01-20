@@ -1,3 +1,4 @@
+// src/pages/Home.tsx
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -11,14 +12,23 @@ import {
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import type { Product } from '../api/productApi';
 import { getProducts } from '../api/productApi';
-// import { useCart } from '../context/CartContext'; // descomente se quiser usar addToCart
+import { resolveImageUrl } from '../api/adminApi'; // importe sua função que resolve URLs
+
+type Product = {
+  id: number;
+  name: string;
+  sku?: string;
+  price?: number;
+  description?: string;
+  imageUrl?: string | null;
+  imagePath?: string | null;
+  _resolvedImage?: string | null; // campo local para URL absoluta
+};
 
 export default function Home() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
-  // const { addToCart } = useCart(); // se tiver o context do carrinho
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,10 +38,18 @@ export default function Home() {
     setError(null);
     try {
       const resp = await getProducts();
-      // aceita resp sendo array ou { data: [...] }
       const raw = (resp && (resp as any).data) ? (resp as any).data : resp;
       const list: Product[] = Array.isArray(raw) ? raw : [];
-      setProducts(list);
+
+      // Normaliza as URLs para absolute (resolveImageUrl deve aceitar '/images/...' ou null)
+      const normalized = list.map(p => {
+        const rawPath = p.imageUrl ?? p.imagePath ?? null;
+        const resolved = rawPath ? resolveImageUrl(rawPath) : null;
+        return { ...p, _resolvedImage: resolved };
+      });
+
+      setProducts(normalized);
+      console.log('Produtos carregados:', normalized);
     } catch (err) {
       console.error('Erro ao carregar produtos', err);
       setError('Erro ao carregar produtos. Veja console.');
@@ -57,40 +75,40 @@ export default function Home() {
       )}
 
       {isAdmin && (
-        <Button
-          sx={{ ml: 2, mb: 2 }}
-          variant="outlined"
-          onClick={() => navigate('/admin/products')}
-        >
+        <Button sx={{ ml: 2, mb: 2 }} variant="outlined" onClick={() => navigate('/admin/products')}>
           Ir para Admin
         </Button>
       )}
 
       {loading && <Typography>Carregando produtos...</Typography>}
       {error && <Typography color="error">{error}</Typography>}
-
-      {!loading && products.length === 0 && !error && (
-        <Typography>Nenhum produto encontrado.</Typography>
-      )}
+      {!loading && products.length === 0 && !error && <Typography>Nenhum produto encontrado.</Typography>}
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
         {products.map((p) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={p.id} sx={{width:200}}>
+          <Grid item key={p.id} xs={12} sm={6} md={4} lg={3}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {/* se tiver imagem real, substitua CardMedia */}
-              <CardMedia
-                component="div"
-                sx={{
-                  height: 140,
-                  backgroundColor: 'grey.100',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'text.secondary',
-                }}
-              >
-                <Typography variant="caption">Imagem</Typography>
-              </CardMedia>
+              {p._resolvedImage ? (
+                <CardMedia
+                  component="img"
+                  image={p._resolvedImage}
+                  alt={p.name}
+                  sx={{ height: 140, objectFit: 'cover' }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    height: 140,
+                    backgroundColor: 'grey.100',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'text.secondary',
+                  }}
+                >
+                  <Typography variant="caption">Imagem</Typography>
+                </Box>
+              )}
 
               <CardContent sx={{ flex: 1 }}>
                 <Typography variant="h6" noWrap>{p.name}</Typography>
@@ -104,16 +122,7 @@ export default function Home() {
 
               <CardActions>
                 <Button size="small" onClick={() => navigate(`/product/${p.id}`)}>View</Button>
-
-                {/* exemplo integração cart:
-                <Button size="small" onClick={() => addToCart(p.id)}>Add to cart</Button>
-                */}
-
-                {isAdmin && (
-                  <Button size="small" onClick={() => navigate(`/admin/products/${p.id}/edit`)}>
-                    Editar
-                  </Button>
-                )}
+                {isAdmin && <Button size="small" onClick={() => navigate(`/admin/products/${p.id}/edit`)}>Editar</Button>}
               </CardActions>
             </Card>
           </Grid>
