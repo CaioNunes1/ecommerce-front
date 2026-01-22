@@ -31,6 +31,9 @@ export default function AdminNav() {
           <ListItemButton component={RouterLink} to="/admin/users">
             <ListItemText primary="Usuários" />
           </ListItemButton>
+          <ListItemButton component={RouterLink} to="/admin/dashboard">
+            <ListItemText primary="Dashboard" />
+          </ListItemButton>
         </List>
       </Box>
     </Drawer>

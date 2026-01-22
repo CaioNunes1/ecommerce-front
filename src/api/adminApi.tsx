@@ -36,3 +36,17 @@ export function resolveImageUrl(imageUrl?: string | null) {
   // caso sem barra inicial, também prefixa
   return `${backendBase}/${imageUrl}`;
 }
+export async function getReportsSummary() {
+  const res = await api.get('/admin/reports/summary');
+  return res.data;
+}
+
+export async function getSalesPerDay(days = 7) {
+  const res = await api.get('/admin/reports/sales', { params: { days } });
+  return res.data;
+}
+
+export async function getTopProducts(limit = 5) {
+  const res = await api.get('/admin/reports/top-products', { params: { limit } });
+  return res.data;
+}
