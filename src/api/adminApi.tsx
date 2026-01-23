@@ -41,7 +41,7 @@ export async function getReportsSummary() {
   return res.data;
 }
 
-export async function getSalesPerDay(days = 7) {
+export async function getSalesPerDay(days=7) {
   const res = await api.get('/admin/reports/sales', { params: { days } });
   return res.data;
 }
