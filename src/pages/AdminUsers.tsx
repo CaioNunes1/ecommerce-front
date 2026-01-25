@@ -17,11 +17,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { adminApi } from '../api/adminApi';
-import type { User } from '../api/orderApi';
+import { Order, type User } from '../api/orderApi';
 
 // AdminUsers: mostra lista de clientes com busca, contagem e ações
 export default function AdminUsers() {
@@ -30,6 +31,8 @@ export default function AdminUsers() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
+  const [orders,setOrders]=useState<Order[]>([]);
+  const [openOrdersModal,setOpenOrdersModal]=useState(false);
 
   async function fetchUsers() {
     setLoading(true);
@@ -43,6 +46,20 @@ export default function AdminUsers() {
       setError('Erro ao carregar usuários');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSeeUsersOrders(email:string){
+    setOpenOrdersModal(true);
+    try{
+      const emailString=email||'';
+      const resp = await adminApi.getOrderUserOrderDetails(emailString);
+      const raw = resp && (resp as any).data ? (resp as any).data : resp;
+      setOrders(Array.isArray(raw) ? raw : []);
+      console.log('Orders do usuário:',raw);
+    }
+    catch(err){
+      console.error('Erro ao buscar pedidos do usuário',err);
     }
   }
 
@@ -71,6 +88,17 @@ export default function AdminUsers() {
       // opcional: mostrar snackbar/toast
     }
   }
+
+  // Função para calcular total da ordem
+  const calculateOrderTotal = (order: any) => {
+    if (!order.items || order.items.length === 0) return 0;
+    
+    return order.items.reduce((total, item) => {
+      const price = item.priceAtPurchase || 0;
+      const quantity = item.quantity || 0;
+      return total + (price * quantity);
+    }, 0);
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -122,7 +150,7 @@ export default function AdminUsers() {
 
                 <Box>
                   <Tooltip title="Ver pedidos do usuário">
-                    <IconButton size="small" onClick={() => window.alert(`Ir para pedidos de ${u.email} (implemente navegação)`)}>
+                    <IconButton size="small" onClick={() => handleSeeUsersOrders(u.email)}>
                       <VisibilityIcon />
                     </IconButton>
                   </Tooltip>
@@ -142,6 +170,81 @@ export default function AdminUsers() {
           </Grid>
         ))}
       </Grid>
+
+      
+      <Dialog open={openOrdersModal} onClose={() => setOpenOrdersModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Ordens do Usuário</DialogTitle>
+        <DialogContent>
+          {orders.length === 0 ? (
+            <Typography variant="body1" sx={{ p: 2, textAlign: 'center' }}>
+              Nenhuma ordem encontrada para este usuário.
+            </Typography>
+          ) : (
+            orders.map((order) => (
+              <Paper key={order.id} sx={{ p: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    Ordem #{order.id}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                  </Typography>
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Status: {order.status}
+                </Typography>
+                
+                {/* Lista de itens */}
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Itens ({order.items?.length || 0}):
+                  </Typography>
+                  
+                  {order.items?.map((item, index) => (
+                    <Box key={item.id || index} sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      mb: 1,
+                      p: 1,
+                      backgroundColor: 'background.default',
+                      borderRadius: 1
+                    }}>
+                      {/* Verificando se product existe */}
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight="medium">
+                          {item.product?.name || 'Produto não encontrado'}
+                        </Typography>
+                        {item.product?.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {item.product.description}
+                          </Typography>
+                        )}
+                      </Box>
+                      
+                      <Box sx={{ textAlign: 'right', ml: 2 }}>
+                        <Typography variant="body2">
+                          {item.quantity} x R$ {item.priceAtPurchase?.toFixed(2) || '0.00'}
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          Total: R$ {(item.quantity * item.priceAtPurchase)?.toFixed(2) || '0.00'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                  
+                  {/* Total da ordem */}
+                  <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Total da Ordem: R$ {calculateOrderTotal(order).toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            ))
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!confirmDelete} onClose={() => setConfirmDelete(null)}>
         <DialogTitle>Confirmar exclusão</DialogTitle>

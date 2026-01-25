@@ -119,7 +119,7 @@ export default function AdminOrders() {
         {orders.map(o => (
           <Grid item xs={12} md={6} key={o.id}>
             <Card>
-              <CardContent sx={{ position: 'relative' }}>
+              <CardContent sx={{ position: 'relative', width: 250 }}>
                 <Box sx={{ position: 'absolute', right: 8, top: 8 }}>
                   <IconButton
                     size="small"

@@ -44,12 +44,14 @@ export default function MyOrders() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) return 
     (async () => {
       try {
-        const res = await api.get("/orders/my");
+        const res = await api.get("/orders/my",{params:{email:user.email}});
         setOrders(res.data || []);
+        
         console.log("Meus pedidos:", res.data);
+        
       } catch (e: any) {
         setErr("Erro ao carregar pedidos.");
         console.error(e);

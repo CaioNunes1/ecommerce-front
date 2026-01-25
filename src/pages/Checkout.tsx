@@ -17,6 +17,7 @@ import {
   Alert,
 } from "@mui/material";
 import { resolveImageUrl } from '../api/adminApi'; // <--- usar função que resolve URL em seu projeto
+import { useAuth } from "../context/AuthContext";
 
 type Line = { product: Product & { _resolvedImage?: string | null }; quantity: number };
 
@@ -28,6 +29,7 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -91,7 +93,7 @@ export default function Checkout() {
     setSubmitting(true);
     setError(null);
 
-    const payload = { userId: 1, items };
+    const payload = { userId: user?.id, items };
 
     try {
       const result = await createOrder(payload);

@@ -12,6 +12,7 @@ deleteUser:(email:string)=>api.delete(`/user/deleteByEmail/${email}`),
 getAllOrders: () => api.get('/admin/orders'),
 updateOrderStatus: (orderId: number, status: string) =>
     api.put(`/admin/orders/${orderId}/status`, null, { params: { status } }),
+getOrderUserOrderDetails: (email:string)=>api.get(`/orders/my`,{params: {email}}),
 };
 
 
