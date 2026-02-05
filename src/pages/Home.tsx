@@ -87,7 +87,7 @@ export default function Home() {
       <Grid container spacing={2} sx={{ mt: 1 }}>
         {products.map((p) => (
           <Grid item key={p.id} xs={12} sm={6} md={4} lg={3}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', width:200 }}>
               {p._resolvedImage ? (
                 <CardMedia
                   component="img"
